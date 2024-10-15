@@ -747,6 +747,7 @@ ncclResult_t ncclTopoComputeP2pChannels(struct ncclComm* comm) {
   }
 
   int minChannels = comm->p2pnChannels;
+  // 获取所有 local GPU 中 channel 最少的那个的 channel 数量
   // We need to loop through all local GPUs to have a global picture
   for (int g=0; g<comm->topo->nodes[GPU].count; g++) {
     for (int r=0; r<comm->nRanks; r++) {

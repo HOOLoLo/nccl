@@ -1937,9 +1937,11 @@ static ncclResult_t hostToDevRedOp(
 // Converts `info` to a task and adds it to `comm->planner`. The exception is with
 // single rank communicators, collectives are issued as `ncclMemcpyAsync`s and
 // thus don't need a task.
+// 这个地方是真正把 op 转成 任务下发的地方. 
 static ncclResult_t taskAppend(struct ncclComm* comm, struct ncclInfo* info) {
   struct ncclKernelPlanner *planner = &comm->planner;
-
+  // collnet 说明: https://github.com/NVIDIA/nccl/issues/320 
+  // 主要用于 in network reduction
   if (info->coll == ncclFuncSend || info->coll == ncclFuncRecv) {
     int peer = info->root;
     ssize_t nBytes = info->count*ncclTypeSize(info->datatype);

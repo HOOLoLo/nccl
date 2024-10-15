@@ -803,6 +803,7 @@ static ncclResult_t initTransportsRank(struct ncclComm* comm, struct ncclComm* p
     assert(intraProcRank==0 ? comm==comm0 : true);
     comm->intraComm0 = comm0;
     comm->intraRank = intraProcRank;
+    // 当前 node 中的 ranks
     comm->intraRanks = intraProcRanks;
     comm->intraBarrierPhase = 0;
     comm->intraBarrierCounter = 0;
@@ -1071,6 +1072,7 @@ static ncclResult_t initTransportsRank(struct ncclComm* comm, struct ncclComm* p
   NCCLCHECKGOTO(computeBuffSizes(comm), ret, fail);
 
   // Compute nChannels per peer for p2p
+  // 计算 p2p 使用 的channels
   NCCLCHECKGOTO(ncclTopoComputeP2pChannels(comm), ret, fail);
 
   /* until now, all info of comm should be known. We can initialize shared resources and
