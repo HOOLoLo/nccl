@@ -65,6 +65,7 @@ NCCL_PARAM(GdrCopyEnable, "GDRCOPY_ENABLE", 0);
 // GDRCOPY support
 gdr_t ncclGdrCopy = NULL;
 
+// Gdr 就是 GPU direct RDMA
 ncclResult_t initGdrCopy() {
   if (ncclParamGdrCopyEnable() == 1) {
     ncclGdrCopy = ncclGdrInit();
@@ -79,6 +80,7 @@ static void initOnceFunc() {
   initEnv();
   initGdrCopy();
   // Always initialize bootstrap network
+  // 这里就是获取一个 tcp 的端口给到 bootstrapNetIfAddr
   NCCLCHECKGOTO(bootstrapNetInit(), initResult, exit);
 
   initNvtxRegisteredEnums();
@@ -86,6 +88,7 @@ exit:;
 }
 
 static ncclResult_t ncclInit() {
+  // pthread_once 多线程情况下只会被执行一次
   pthread_once(&initOnceControl, initOnceFunc);
   return initResult;
 }
@@ -310,6 +313,7 @@ exit:
   return ret;
 }
 
+// 创建通信子的时候创建 通信网络, 和以前不一样
 static ncclResult_t commAlloc(struct ncclComm* comm, struct ncclComm* parent, int ndev, int rank) {
   if (ndev < 1) {
     WARN("invalid device count (%d) requested", ndev);
@@ -327,6 +331,7 @@ static ncclResult_t commAlloc(struct ncclComm* comm, struct ncclComm* parent, in
   comm->nRanks = ndev;
 
   NCCLCHECK(ncclNetPluginLoad(comm));
+// 创建通信网络
   NCCLCHECK(ncclNetInit(comm));
   INFO(NCCL_INIT, "Using network %s", comm->ncclNet->name);
 
@@ -1352,6 +1357,7 @@ fail:
   goto exit;
 }
 
+// 这个在 comm split 中会调用
 static ncclResult_t ncclCommInitRankFunc(struct ncclAsyncJob* job_) {
   struct ncclCommInitRankAsyncJob* job = (struct ncclCommInitRankAsyncJob*)job_;
   ncclComm_t comm = job->comm;

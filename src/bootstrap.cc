@@ -25,6 +25,10 @@ static union ncclSocketAddress bootstrapNetIfAddr;
 static int bootstrapNetInitDone = 0;
 pthread_mutex_t bootstrapNetLock = PTHREAD_MUTEX_INITIALIZER;
 
+// 通过 tcp bootstrap 
+// bootstrap 网络主要是用于初始化时交换一些简单的信息, 比如每个机器的 ip 端口
+// 思考: GetUniqueId 是在 一个 rank 上执行的,这个 bootstrapNetInit 会和其他 rank 产生联系吗?
+// 看这个函数的行为只是个 bootstrapNetIfAddr 赋值而已, 就是获取一个 tcp 的 ip 端口
 ncclResult_t bootstrapNetInit() {
   if (bootstrapNetInitDone == 0) {
     pthread_mutex_lock(&bootstrapNetLock);
@@ -37,6 +41,7 @@ ncclResult_t bootstrapNetInit() {
           pthread_mutex_unlock(&bootstrapNetLock);
           return ncclInvalidArgument;
         }
+        // bootstrapNetIfName 保存网卡名
         if (ncclFindInterfaceMatchSubnet(bootstrapNetIfName, &bootstrapNetIfAddr, &remoteAddr, MAX_IF_NAME_SIZE, 1) <= 0) {
           WARN("NET/Socket : No usable listening interface found");
           pthread_mutex_unlock(&bootstrapNetLock);
@@ -211,6 +216,7 @@ ncclResult_t bootstrapGetUniqueId(struct ncclBootstrapHandle* handle) {
     }
     handle->magic = NCCL_MAGIC;
   } else {
+    // 生成一个随机数为 unique id
     NCCLCHECK(getRandomData(&handle->magic, sizeof(handle->magic)));
     memcpy(&handle->addr, &bootstrapNetIfAddr, sizeof(union ncclSocketAddress));
     NCCLCHECK(bootstrapCreateRoot(handle, false));

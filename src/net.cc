@@ -329,7 +329,9 @@ static ncclResult_t ncclCollNet_v7_as_v8_init(ncclDebugLogger_t logfn) {
 }
 
 static pthread_mutex_t netLock = PTHREAD_MUTEX_INITIALIZER;
+// 这里保存了 ncclNetIb 和 ncclNetSocket
 ncclNet_t* ncclNets[3] = { nullptr, &ncclNetIb, &ncclNetSocket };
+// collnet 拓扑通常包含两级通信: 组内通信,组间通信
 ncclCollNet_t* ncclCollNets[3] = { nullptr, nullptr, nullptr };
 enum ncclNetState {
   ncclNetStateInit = 0,
@@ -420,6 +422,7 @@ static int netPluginStatus = netPluginLoadReady;
 
 #define MAX_PLUGIN_LOAD 2
 
+// 这个 plugin load 照理应该在 GetuniqueId 的时候执行的?
 ncclResult_t ncclNetPluginLoad(struct ncclComm* comm) {
   char couldNotFindNames[MAX_PLUGIN_LOAD * PATH_MAX] = { 0 };
   if (netPluginLoadFailed == netPluginStatus) {
@@ -593,6 +596,7 @@ static ncclResult_t collNetGetState(int i, enum ncclNetState* state) {
   return ncclSuccess;
 }
 
+// 通过 comm init net
 ncclResult_t ncclNetInit(struct ncclComm* comm) {
   // Initialize main communication network
   const char* netName;
@@ -609,7 +613,7 @@ ncclResult_t ncclNetInit(struct ncclComm* comm) {
       // Mismatched device plugin version
       continue;
     }
-
+// comm 中存放使用的 Net 这个就是对应的通信网络
     comm->ncclNet = ncclNets[i];
     ok = true;
 
@@ -619,6 +623,7 @@ ncclResult_t ncclNetInit(struct ncclComm* comm) {
         comm->ncclCollNet = ncclCollNets[i];
       }
     }
+// 赋值成功一次就 break
     break;
   }
 

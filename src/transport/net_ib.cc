@@ -419,18 +419,22 @@ int ncclIbFindMatchingDev(int dev) {
   return ncclNMergedIbDevs;
 }
 
+// 初始化 ib 网络
 ncclResult_t ncclIbInit(ncclDebugLogger_t logFunction) {
   ncclResult_t ret;
   if (ncclParamIbDisable()) return ncclInternalError;
   static int shownIbHcaEnv = 0;
+  // 加载动态链接库 libibverbs.so 获取动态库的各个函数
   if(wrap_ibv_symbols() != ncclSuccess) { return ncclInternalError; }
 
   if (ncclNIbDevs == -1) {
     pthread_mutex_lock(&ncclIbLock);
+    // 避免 fork 引起 rdma 网卡读写出错
     wrap_ibv_fork_init();
     if (ncclNIbDevs == -1) {
       ncclNIbDevs = 0;
       ncclNMergedIbDevs = 0;
+      // ib 网络也会用到 socket 进行带外网络的传输, 所以获取一个 可用的网卡保存到 ncclIbIfAddr
       if (ncclFindInterfaces(ncclIbIfName, &ncclIbIfAddr, MAX_IF_NAME_SIZE, 1) != 1) {
         WARN("NET/IB : No IP interface found.");
         ret = ncclInternalError;
@@ -450,7 +454,8 @@ ncclResult_t ncclIbInit(ncclDebugLogger_t logFunction) {
       bool searchExact = userIbEnv && userIbEnv[0] == '=';
       if (searchExact) userIbEnv++;
       int nUserIfs = parseStringList(userIbEnv, userIfs, MAX_IB_DEVS);
-
+      // HCA （Host Channel Adapter） 是指 IB 和 RoCE ,就是指 RDMA 网卡吧
+      // 获取所有 rdma 设备到 devices 中
       if (ncclSuccess != wrap_ibv_get_device_list(&devices, &nIbDevs)) { ret = ncclInternalError; goto fail; }
 
       // Should NCCL merge multi-port devices into one?
@@ -2078,6 +2083,7 @@ ncclResult_t ncclIbCloseListen(void* listenComm) {
   return ncclSuccess;
 }
 
+// ncclNet_t 是一些列的函数指针, 比如初始化, 发送, 接收等
 ncclNet_t ncclNetIb = {
   "IB",
   ncclIbInit,

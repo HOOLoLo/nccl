@@ -43,6 +43,7 @@ typedef struct {
   // Name of the network (mainly for logs)
   const char* name;
   // Initialize the network.
+  // 函数指针
   ncclResult_t (*init)(ncclDebugLogger_t logFunction);
   // Return the number of adapters.
   ncclResult_t (*devices)(int* ndev);
